@@ -53,7 +53,7 @@ const connections = io.of(`/mediasoup`);
  *         |-> Consumer
  **/
 let worker;
-let rooms = {}; // { roomName1: { Router, rooms: [ sicketId1, ... ] }, ...}
+let rooms = {}; // { roomName1: { Router, rooms: [ socketId1, ... ] }, ...}
 let peers = {}; // { socketId1: { roomName1, socket, transports = [id1, id2,] }, producers = [id1, id2,] }, consumers = [id1, id2,], peerDetails }, ...}
 let transports = []; // [ { socketId1, roomName1, transport, consumer }, ... ]
 let producers = []; // [ { socketId1, roomName1, producer, }, ... ]
@@ -101,6 +101,7 @@ const mediaCodecs = [
 
 connections.on("connection", async (socket) => {
   console.log(socket.id);
+  1;
 
   socket.emit("connection-success", {
     socketId: socket.id,
