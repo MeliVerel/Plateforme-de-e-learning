@@ -22138,6 +22138,7 @@ module.exports = yeast;
 
 },{}],85:[function(require,module,exports){
 //index.js
+
 const io = require("socket.io-client");
 const mediasoupClient = require("mediasoup-client");
 
@@ -22149,6 +22150,12 @@ socket.on("connection-success", ({ socketId }) => {
   console.log(socketId);
   getLocalStream();
 });
+
+let uid = sessionStorage.getItem("uid");
+if (!uid) {
+  uid = String(Math.floor(Math.random() * 10000));
+  sessionStorage.setItem("uid", uid);
+}
 
 let device;
 let rtpCapabilities;
@@ -22190,13 +22197,29 @@ let audioParams;
 let videoParams = { params };
 let consumingTransports = [];
 
-const streamSuccess = (stream) => {
-  localVideo.srcObject = stream;
+let displayFrame = document.getElementById("stream__box");
+let videosContainer = document.getElementById("streams__container");
+let videoFrame;
+let videoFrames = document.getElementsByClassName("video__container");
+let userIdInDisplayFrame = null;
+let stream;
 
-  audioParams = { track: stream.getAudioTracks()[0], ...audioParams };
-  videoParams = { track: stream.getVideoTracks()[0], ...videoParams };
+let expandVideoFrame = (e) => {
+  let child = displayFrame.children[0];
+  if (child) {
+    document.getElementById("streams__container").appendChild(child);
+  }
 
-  joinRoom();
+  displayFrame.style.display = "block";
+  displayFrame.appendChild(e.currentTarget);
+  userIdInDisplayFrame = e.currentTarget.id;
+
+  for (let i = 0; videoFrames.length > i; i++) {
+    if (videoFrames[i].id != userIdInDisplayFrame) {
+      videoFrames[i].style.height = "100px";
+      videoFrames[i].style.width = "100px";
+    }
+  }
 };
 
 const joinRoom = () => {
@@ -22209,6 +22232,48 @@ const joinRoom = () => {
     // once we have rtpCapabilities from the Router, create Device
     createDevice();
   });
+};
+
+let getAndDisplayLocalStream = (stream) => {
+  let player = `<div class="video__container" id="user-container-${uid}">
+  <div class="video-player" id="user-${uid}">
+  <video width="100%" height="100%"  autoplay>
+  </video>
+  </div>
+</div>`;
+
+  document
+    .getElementById("streams__container")
+    .insertAdjacentHTML("beforeend", player);
+
+  videoFrame = document.getElementById(`user-container-${uid}`);
+
+  videoFrame.addEventListener("click", expandVideoFrame);
+  document.querySelector(`#user-${uid} > video`).srcObject = stream;
+
+  console.log(stream);
+
+  // navigator.mediaDevices
+  //   .getUserMedia({
+  //     audio: true,
+  //     video: {
+  //       width: {
+  //         min: 640,
+  //         max: 1920,
+  //       },
+  //       height: {
+  //         min: 400,
+  //         max: 1080,
+  //       },
+  //     },
+  //   })
+  //   .then((stream) => {
+  //     document.querySelector(`#user-${uid} > video`).srcObject = stream;
+  //     videoFrame.addEventListener("click", expandVideoFrame);
+  //   })
+  //   .catch((error) => {
+  //     console.log(error.message);
+  //   });
 };
 
 const getLocalStream = () => {
@@ -22226,10 +22291,20 @@ const getLocalStream = () => {
         },
       },
     })
-    .then(streamSuccess)
+    .then((getStream) => {
+      getAndDisplayLocalStream(getStream);
+      streamSuccess(getStream);
+    })
     .catch((error) => {
       console.log(error.message);
     });
+};
+
+const streamSuccess = (stream) => {
+  audioParams = { track: stream.getAudioTracks()[0], ...audioParams };
+  videoParams = { track: stream.getVideoTracks()[0], ...videoParams };
+
+  joinRoom();
 };
 
 // A device is an endpoint connecting to a Router on the
@@ -22377,6 +22452,7 @@ const signalNewConsumerTransport = async (remoteProducerId) => {
         console.log(params.error);
         return;
       }
+
       console.log(`PARAMS... ${params}`);
 
       let consumerTransport;
@@ -22471,30 +22547,50 @@ const connectRecvTransport = async (
       ];
 
       // create a new div element for the new consumer media
-      const newElem = document.createElement("div");
-      newElem.setAttribute("id", `td-${remoteProducerId}`);
+      // const newElem = document.createElement("div");
+      // newElem.setAttribute("id", `td-${remoteProducerId}`);
 
-      if (params.kind == "audio") {
-        //append to the audio container
-        newElem.innerHTML =
-          '<audio id="' + remoteProducerId + '" autoplay></audio>';
-      } else {
-        //append to the video container
-        newElem.setAttribute("class", "remoteVideo");
-        newElem.innerHTML =
-          '<video id="' +
-          remoteProducerId +
-          '" autoplay class="video" ></video>';
-      }
+      let player = `<div class="video__container" id="user-container-${remoteProducerId}">
+      <div class="video-player" id="user-${remoteProducerId}">
+      <video width="100%" height="100%"  autoplay>
+      </video>
+      </div>
+   </div>`;
 
-      videoContainer.appendChild(newElem);
+      document
+        .getElementById("streams__container")
+        .insertAdjacentHTML("beforeend", player);
+
+      videoFrame = document.getElementById(
+        `user-container-${remoteProducerId}`
+      );
+
+      videoFrame.addEventListener("click", expandVideoFrame);
+
+      // if (params.kind == "audio") {
+      //   //append to the audio container
+      //   newElem.innerHTML =
+      //     '<audio id="' + remoteProducerId + '" autoplay></audio>';
+      // } else {
+      //   //append to the video container
+      //   newElem.setAttribute("class", "remoteVideo");
+      //   newElem.innerHTML =
+      //     '<video id="' +
+      //     remoteProducerId +
+      //     '" autoplay class="video" ></video>';
+      // }
+
+      // videoContainer.appendChild(newElem);
 
       // destructure and retrieve the video track from the producer
       const { track } = consumer;
 
-      document.getElementById(remoteProducerId).srcObject = new MediaStream([
-        track,
-      ]);
+      document.querySelector(`#user-${remoteProducerId} > video`).srcObject =
+        new MediaStream([track]);
+
+      // document.getElementById(remoteProducerId).srcObject = new MediaStream([
+      //   track,
+      // ]);
 
       // the server consumer started with media paused
       // so we need to inform the server to resume
@@ -22520,7 +22616,9 @@ socket.on("producer-closed", ({ remoteProducerId }) => {
   );
 
   // remove the video div element
-  videoContainer.removeChild(document.getElementById(`td-${remoteProducerId}`));
+  videosContainer.removeChild(
+    document.getElementById(`user-container-${remoteProducerId}`)
+  );
 });
 
 },{"mediasoup-client":59,"socket.io-client":74}]},{},[85]);
