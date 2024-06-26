@@ -156,6 +156,20 @@
   background-color: #3f434a;
 }
 
+#message__form button {
+  position: absolute;
+  color: #fff;
+  border: none;
+  border-radius: 0 5px 5px 0;
+  padding: 18px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background-color: #9ba4b5;
+  right: 0;
+  cursor: pointer;
+}
+
+
 #message__form input:focus {
   outline: none;
 }
@@ -182,7 +196,7 @@
 
 #stream__box .video__container {
   border: 2px solid #000;
-  border-radius: 0;
+  border-radius: 50%;
   height: 100% !important;
   width: 100% !important;
 

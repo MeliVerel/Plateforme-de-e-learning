@@ -11,8 +11,14 @@ form.addEventListener("submit", (e) => {
   sessionStorage.setItem("display_name", e.target.name.value);
 
   let inviteCode = e.target.room.value;
-  if (!inviteCode) {
-    inviteCode = String(Math.floor(Math.random() * 10000));
+  let name = e.target.name.value;
+
+  console.log("name : ", name);
+  console.log("inviteCode : ", inviteCode);
+  if (!inviteCode && !name) {
+    alert("veuillez des donnee correctes ");
+    console.log("name : ", name);
+    console.log("inviteCode : ", inviteCode);
   }
-  window.location = `room.html?room=${inviteCode}`;
+  window.location = `room.html?room=${inviteCode}&name=${name}`;
 });
